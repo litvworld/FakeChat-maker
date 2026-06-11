@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌸自定義可愛聊天產生器🌸</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
+  <style>
+    body {
+      font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif;
+      background-color: #FAF6F0;
+      color: #5D5A56;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background-color 0.2s;
+    }
+
+    h1 {
+      color: #FFB6C1;
+      text-shadow: 1px 1px 2px #fff;
+      margin-bottom: 20px;
+    }
+
+    .main-container {
+      display: flex;
+      gap: 30px;
+      max-width: 1000px;
+      width: 100%;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    /* --- 左側控制區 --- */
+    .controls {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.03);
+      width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .control-group { display: flex; flex-direction: column; gap: 5px; }
+
+    .avatar-settings {
+      display: flex;
+      justify-content: space-around;
+      background-color: #FFF5F5;
+      padding: 12px;
+      border-radius: 15px;
+      border: 1px dashed #FFB6C1;
+    }
+
+    .avatar-setting-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #8B5A65;
+    }
+
+    /* 大頭貼底座 */
+    .control-avatar-wrapper-outer {
+      width: 48px; height: 48px; border-radius: 50%; background-color: #ffffff; border: 2px solid #B6E3E6; display: flex; justify-content: center; align-items: center; cursor: pointer; padding: 1px; box-sizing: border-box; transition: transform 0.2s;
+    }
+    .control-avatar-wrapper-outer:hover { transform: scale(1.08); }
+    .control-avatar-wrapper-inner {
+      width: 100%; height: 100%; border-radius: 50%; border: 1px solid #ffffff; display: flex; justify-content: center; align-items: center; box-sizing: border-box;
+    }
+    .control-avatar-wrapper-inner img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+
+    .color-picker-wrapper { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #666; margin-top: 4px; }
+    .color-picker-wrapper input[type="color"] { border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; padding: 0; background: none; }
+
+    .bubble-color-row {
+      display: flex; align-items: center; gap: 10px; background: #FAFAFA; padding: 8px 12px; border-radius: 12px; border: 1px solid #FFE4E1;
+    }
+    .bubble-color-row input[type="color"] { width: 30px; height: 30px; border: 1px solid #FFE4E1; border-radius: 8px; cursor: pointer; padding: 0; background: none; }
+    .bubble-color-row .slider-container { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .bubble-color-row .slider-container span { font-size: 11px; color: #8C8680; display: flex; justify-content: space-between; }
+    .bubble-color-row input[type="range"] { width: 100%; accent-color: #FFB6C1; cursor: pointer; margin: 0; }
+
+    label { font-size: 14px; font-weight: bold; color: #8C8680; }
+    input[type="text"] { padding: 10px; border: 2px solid #FFE4E1; border-radius: 12px; outline: none; font-size: 14px; transition: border-color 0.2s; }
+    input[type="text"]:focus { border-color: #FFB6C1; }
+
+    .bg-setting-row { display: flex; gap: 8px; align-items: center; }
+    .bg-setting-row input[type="text"] { flex: 1; }
+    .bg-setting-row input[type="color"] { width: 40px; height: 40px; border: 2px solid #FFE4E1; border-radius: 12px; cursor: pointer; padding: 0; }
+
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    button { padding: 12px; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; font-size: 14px; transition: all 0.2s; }
+    .btn-left { background-color: #E6F2F2; color: #4A7C7C; }
+    .btn-right { background-color: #FFE4E1; color: #8B5A65; }
+    
+    .btn-download { 
+      background-color: #FFB6C1; color: white; grid-column: span 2; font-size: 15px; box-shadow: 0 4px 10px rgba(255, 182, 193, 0.4);
+    }
+    button:hover { transform: translateY(-2px); filter: brightness(0.95); }
+
+    /* --- 右側預覽視窗容器 --- */
+    .chat-view-window {
+      width: 360px; height: 580px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); background-color: #ffffff; display: flex; flex-direction: column; overflow: hidden; transition: all 0.2s;
+      border: 2px solid transparent; /* 預設在網頁上隱藏黑框，避免影響視覺 */
+      box-sizing: border-box;
+    }
+    .chat-header {
+      background-color: #ffffff; padding: 15px; text-align: center; font-weight: bold; font-size: 16px; border-bottom: 1px solid #FFE4E1; color: #5D5A56; z-index: 10; flex-shrink: 0;
+    }
+    #chat-preview-area { flex: 1; background-color: #FFF0F5; overflow-y: auto; display: flex; flex-direction: column; }
+    
+    /* 網頁一般模式下的精細可愛小滾輪 */
+    #chat-preview-area::-webkit-scrollbar { width: 6px; }
+    #chat-preview-area::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 10px; }
+
+    .chat-content-scroller { padding: 20px 15px; display: flex; flex-direction: column; gap: 15px; }
+
+    .message-row { display: flex; align-items: flex-start; width: 100%; position: relative; }
+
+    /* 大頭貼細框剖面 */
+    .avatar-wrapper-outer {
+      width: 48px; height: 48px; border-radius: 50%; background-color: #ffffff; border: 2px solid #B6E3E6; display: flex; justify-content: center; align-items: center; flex-shrink: 0; padding: 1px; box-sizing: border-box;
+    }
+    .avatar-wrapper-inner {
+      width: 100%; height: 100%; border-radius: 50%; border: 1px solid #ffffff; display: flex; justify-content: center; align-items: center; box-sizing: border-box;
+    }
+    .avatar-wrapper-inner img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+
+    .message-content {
+      max-width: 62%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; word-break: break-all; position: relative; margin-top: 4px; backdrop-filter: blur(2px); border: 1px solid transparent; box-sizing: border-box;
+    }
+
+    .message-row.left { justify-content: flex-start; }
+    .message-row.left .avatar-wrapper-outer { margin-right: 10px; }
+    .message-row.left .message-content { background-color: #ffffff; border-top-left-radius: 4px; color: #5D5A56; }
+
+    .message-row.right { justify-content: flex-end; }
+    .message-row.right .avatar-wrapper-outer { margin-left: 10px; order: 2; }
+    .message-row.right .message-content { background-color: #FFE4E1; border-top-right-radius: 4px; color: #4A3E3D; order: 1; }
+
+    .delete-btn {
+      position: absolute; background: rgba(255, 92, 92, 0.85); color: white; border: none; border-radius: 10px; padding: 3px 8px; font-size: 11px; cursor: pointer; top: 50%; transform: translateY(-50%); opacity: 0; transition: opacity 0.2s ease; z-index: 10; white-space: nowrap;
+    }
+    .message-row.left .delete-btn { right: -55px; }
+    .message-row.right .delete-btn { left: -55px; }
+    .message-row:hover .delete-btn { opacity: 1; }
+
+    /* 全螢幕純淨展示狀態下的關閉按鈕 */
+    .close-fullscreen-btn {
+      position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; display: none; z-index: 99999; font-size: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .close-fullscreen-btn:hover { background: rgba(0,0,0,0.7); }
+
+    /* =======================================================
+       🌟 --- 核心升級：純淨模式專屬排版規則 (全白、黑框、藏滾輪) --- 
+       ======================================================= */
+    body.pure-fullscreen-mode h1,
+    body.pure-fullscreen-mode .controls,
+    body.pure-fullscreen-mode .delete-btn {
+      display: none !important; /* 隱藏左側控制台與撤回鈕 */
+    }
+    
+    body.pure-fullscreen-mode {
+      background-color: #ffffff !important; /* 🌟 修正點 1：背景改為純白色 */
+      padding: 0 !important;
+      height: 100vh !important;
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+    }
+    
+    body.pure-fullscreen-mode .chat-view-window {
+      border: 2px solid #000000 !important; /* 🌟 修正點 2：整個聊天介面用俐落黑線框起來 */
+      box-shadow: 0 10px 40px rgba(0,0,0,0.08) !important; /* 保留微陰影增加層次 */
+    }
+
+    /* 🌟 修正點 3：純淨模式下，滾輪完美消失（無論任何瀏覽器內建核心） */
+    body.pure-fullscreen-mode #chat-preview-area::-webkit-scrollbar {
+      display: none !important; /* Chrome, Safari, Edge 滾輪隱藏 */
+    }
+    body.pure-fullscreen-mode #chat-preview-area {
+      -ms-overflow-style: none !important;  /* IE, Old Edge 滾輪隱藏 */
+      scrollbar-width: none !important;     /* Firefox 滾輪隱藏 */
+    }
+
+    /* Cropper 彈出視窗 */
+    .modal {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 99999;
+    }
+    .modal-content {
+      background: white; padding: 20px; border-radius: 24px; width: 360px; max-width: 90%; box-sizing: border-box; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    .img-container { width: 100%; height: 260px; margin: 15px 0; overflow: hidden; background: #f0f0f0; border-radius: 14px; position: relative; }
+    #image-to-crop { display: block; max-width: 100%; max-height: 100%; }
+    .cropper-view-box, .cropper-face { border-radius: 50% !important; }
+    .modal-buttons { display: flex; justify-content: space-between; gap: 10px; margin-top: 5px; }
+    .modal-buttons button { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
+    .btn-cancel { background-color: #F0EDE8; color: #7A7570; }
+    .btn-confirm { background-color: #FFB6C1; color: white; }
+  </style>
+</head>
+<body>
+
+  <h1>🌸 專屬自定義可愛聊天產生器 v6.1 🌸</h1>
+
+  <button class="close-fullscreen-btn" onclick="exitPureMode()">✕ 退出純淨模式 (或按 Esc)</button>
+
+  <div class="main-container">
+    
+    <div class="controls">
+      
+      <div class="control-group">
+        <label>✨ 大頭貼外框色與裁剪設定：</label>
+        <div class="avatar-settings">
+          <div class="avatar-setting-item">
+            <span>👈 對方頭貼</span>
+            <div class="control-avatar-wrapper-outer" id="preview-outer-left" onclick="triggerUpload('left')" title="點擊更換圖片">
+              <div class="control-avatar-wrapper-inner">
+                <img id="control-avatar-left" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%23B6E3E6'><circle cx='50' cy='50' r='45'/></svg>">
+              </div>
+            </div>
+            <div class="color-picker-wrapper">
+              外框色: <input type="color" id="color-left" value="#B6E3E6" oninput="syncAllStyles()">
+            </div>
+          </div>
+          
+          <div class="avatar-setting-item">
+            <span>自己頭貼 👉</span>
+            <div class="control-avatar-wrapper-outer" id="preview-outer-right" onclick="triggerUpload('right')" title="點擊更換圖片">
+              <div class="control-avatar-wrapper-inner">
+                <img id="control-avatar-right" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%23FFD1DC'><circle cx='50' cy='50' r='45'/></svg>">
+              </div>
+            </div>
+            <div class="color-picker-wrapper">
+              外框色: <input type="color" id="color-right" value="#FFD1DC" oninput="syncAllStyles()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>💬 對方聊天框顏色與透明度：</label>
+        <div class="bubble-color-row">
+          <input type="color" id="bubbleColorLeft" value="#FFFFFF" oninput="syncAllStyles()">
+          <div class="slider-container">
+            <span>透明度 <b id="alphaTextLeft">100%</b></span>
+            <input type="range" id="bubbleAlphaLeft" min="0" max="100" value="100" oninput="syncAllStyles()">
+          </div>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>💬 自己聊天框顏色與透明度：</label>
+        <div class="bubble-color-row">
+          <input type="color" id="bubbleColorRight" value="#FFE4E1" oninput="syncAllStyles()">
+          <div class="slider-container">
+            <span>透明度 <b id="alphaTextRight">100%</b></span>
+            <input type="range" id="bubbleAlphaRight" min="0" max="100" value="100" oninput="syncAllStyles()">
+          </div>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label for="bgHexInput">🎨 自訂聊天室背景色：</label>
+        <div class="bg-setting-row">
+          <input type="text" id="bgHexInput" value="#FFF0F5" placeholder="輸入16進位色碼 (如 #FFF0F5)" oninput="updateBgFromText()">
+          <input type="color" id="bgColorPicker" value="#FFF0F5" oninput="updateBgFromPicker()">
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label for="nameInput">更改對方名字：</label>
+        <input type="text" id="nameInput" value="可愛小熊" oninput="updateName()">
+      </div>
+      <div class="control-group">
+        <label for="msgInput">輸入對話內容：</label>
+        <input type="text" id="msgInput" placeholder="想說什麼呢...">
+      </div>
+      <div class="btn-grid">
+        <button class="btn-left" onclick="addMessage('left')">👈 對方說</button>
+        <button class="btn-right" onclick="addMessage('right')">自己說 👉</button>
+        <button class="btn-download" onclick="enterPureMode()">🖥️ 切換至全螢幕純淨截圖模式</button>
+      </div>
+    </div>
+
+    <div class="chat-view-window" id="entireChatWindow">
+      <div class="chat-header" id="chatName">可愛小熊</div>
+      <div id="chat-preview-area">
+        <div class="chat-content-scroller" id="chatBox">
+          </div>
+      </div>
+    </div>
+
+  </div>
+
+  <input type="file" id="avatar-input" accept="image/*" onchange="startCropper(event)" style="display: none;">
+
+  <div id="cropperModal" class="modal">
+    <div class="modal-content">
+      <h3 style="margin-top:0; color:#5D5A56; font-size:16px;">📐 移動與縮放範圍</h3>
+      <div class="img-container">
+        <img id="image-to-crop" src="">
+      </div>
+      <div class="modal-buttons">
+        <button class="btn-cancel" onclick="closeModal()">取消</button>
+        <button class="btn-confirm" onclick="cropAndSave()">確認裁切</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let cropper = null; let targetAvatarSide = 'left'; 
+    let leftAvatarData = document.getElementById('control-avatar-left').src;
+    let rightAvatarData = document.getElementById('control-avatar-right').src;
+
+    function updateName() {
+      const nameInput = document.getElementById('nameInput').value;
+      document.getElementById('chatName').innerText = nameInput || '隱藏好友';
+    }
+
+    function updateBgFromText() {
+      let hex = document.getElementById('bgHexInput').value.trim();
+      if(hex && !hex.startsWith('#')) hex = '#' + hex;
+      const reg = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+      if (reg.test(hex)) {
+        document.getElementById('chat-preview-area').style.backgroundColor = hex;
+        document.getElementById('bgColorPicker').value = hex.substring(0,7);
+      }
+    }
+
+    function updateBgFromPicker() {
+      const color = document.getElementById('bgColorPicker').value;
+      document.getElementById('chat-preview-area').style.backgroundColor = color;
+      document.getElementById('bgHexInput').value = color.toUpperCase();
+    }
+
+    function hexToRgba(hex, percent) {
+      hex = hex.replace('#', '');
+      if (hex.length === 3) hex = hex.split('').map(str => str + str).join('');
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${percent / 100})`;
+    }
+
+    function getDarkerBorderRgba(hex, percent) {
+      hex = hex.replace('#', '');
+      if (hex.length === 3) hex = hex.split('').map(str => str + str).join('');
+      let r = Math.max(0, parseInt(hex.substring(0, 2), 16) - 40);
+      let g = Math.max(0, parseInt(hex.substring(2, 4), 16) - 40);
+      let b = Math.max(0, parseInt(hex.substring(4, 6), 16) - 40);
+      return `rgba(${r}, ${g}, ${b}, ${Math.max(0.4, percent / 100)})`;
+    }
+
+    function syncAllStyles() {
+      const leftColor = document.getElementById('color-left').value;
+      const rightColor = document.getElementById('color-right').value;
+
+      document.getElementById('preview-outer-left').style.borderColor = leftColor;
+      document.getElementById('preview-outer-right').style.borderColor = rightColor;
+
+      document.querySelectorAll('.message-row.left .avatar-wrapper-outer').forEach(div => div.style.borderColor = leftColor);
+      document.querySelectorAll('.message-row.right .avatar-wrapper-outer').forEach(div => div.style.borderColor = rightColor);
+
+      const bColorLeft = document.getElementById('bubbleColorLeft').value;
+      const bAlphaLeft = document.getElementById('bubbleAlphaLeft').value;
+      document.getElementById('alphaTextLeft').innerText = bAlphaLeft + '%';
+      const rgbaLeft = hexToRgba(bColorLeft, bAlphaLeft);
+      const borderRgbaLeft = getDarkerBorderRgba(bColorLeft, bAlphaLeft);
+
+      const bColorRight = document.getElementById('bubbleColorRight').value;
+      const bAlphaRight = document.getElementById('bubbleAlphaRight').value;
+      document.getElementById('alphaTextRight').innerText = bAlphaRight + '%';
+      const rgbaRight = hexToRgba(bColorRight, bAlphaRight);
+      const borderRgbaRight = getDarkerBorderRgba(bColorRight, bAlphaRight);
+
+      document.querySelectorAll('.message-row.left .message-content').forEach(b => {
+        b.style.backgroundColor = rgbaLeft; b.style.border = `1px solid ${borderRgbaLeft}`;
+      });
+      document.querySelectorAll('.message-row.right .message-content').forEach(b => {
+        b.style.backgroundColor = rgbaRight; b.style.border = `1px solid ${borderRgbaRight}`;
+      });
+    }
+
+    function addMessage(direction) {
+      const msgInput = document.getElementById('msgInput');
+      const text = msgInput.value.trim();
+      if (!text) return;
+
+      const chatBox = document.getElementById('chatBox');
+      const row = document.createElement('div');
+      row.className = `message-row ${direction}`;
+
+      row.innerHTML = `
+        <div class="avatar-wrapper-outer"><div class="avatar-wrapper-inner"><img src="${direction === 'left' ? leftAvatarData : rightAvatarData}"></div></div>
+        <div class="message-content">${text}</div>
+        <button class="delete-btn" onclick="deleteMessage(this)">❌ 撤回</button>
+      `;
+
+      chatBox.appendChild(row);
+      msgInput.value = ''; syncAllStyles();
+      document.getElementById('chat-preview-area').scrollTop = document.getElementById('chat-preview-area').scrollHeight;
+    }
+
+    function deleteMessage(btn) {
+      const row = btn.closest('.message-row');
+      if (row) {
+        row.style.opacity = '0'; row.style.transition = 'all 0.2s ease';
+        setTimeout(() => { row.remove(); }, 200);
+      }
+    }
+
+    function triggerUpload(side) { targetAvatarSide = side; document.getElementById('avatar-input').click(); }
+
+    function startCropper(event) {
+      const file = event.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const image = document.getElementById('image-to-crop'); image.src = e.target.result;
+        document.getElementById('cropperModal').style.display = 'flex';
+        if (cropper) { cropper.destroy(); cropper = null; }
+        setTimeout(() => {
+          cropper = new Cropper(image, { aspectRatio: 1, viewMode: 1, guides: true, background: false, autoCropArea: 0.8, responsive: true, restore: false });
+        }, 80);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // 關閉裁切視窗
+    function closeModal() {
+      document.getElementById('cropperModal').style.display = 'none'; document.getElementById('avatar-input').value = '';
+      if (cropper) { cropper.destroy(); cropper = null; }
+    }
+
+    function cropAndSave() {
+      if (!cropper) return;
+      const canvas = cropper.getCroppedCanvas({ width: 180, height: 180 });
+      const newDataUrl = canvas.toDataURL();
+      if (targetAvatarSide === 'left') {
+        leftAvatarData = newDataUrl; document.getElementById('control-avatar-left').src = newDataUrl;
+      } else {
+        rightAvatarData = newDataUrl; document.getElementById('control-avatar-right').src = newDataUrl;
+      }
+      refreshAvatars(); closeModal();
+    }
+
+    function refreshAvatars() {
+      document.querySelectorAll('.message-row.left .avatar-wrapper-inner img').forEach(img => img.src = leftAvatarData);
+      document.querySelectorAll('.message-row.right .avatar-wrapper-inner img').forEach(img => img.src = rightAvatarData);
+      syncAllStyles();
+    }
+
+    function enterPureMode() {
+      document.body.classList.add('pure-fullscreen-mode');
+    }
+
+    function exitPureMode() {
+      document.body.classList.remove('pure-fullscreen-mode');
+    }
+
+    // 按 Esc 鍵也可以無痛退出
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        exitPureMode();
+      }
+    });
+
+    window.onload = function() { syncAllStyles(); }
+  </script>
+</body>
+</html>
