@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🌸自定義可愛聊天產生器🌸</title>
+  <title>🦊自定義聊天產生器🔮</title>
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
   <style>
+    /* 全局可愛文具風樣式 */
     body {
       font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif;
       background-color: #FAF6F0;
@@ -18,22 +19,25 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      transition: background-color 0.2s;
+      transition: background-color 0.2s, padding 0.2s;
     }
 
     h1 {
       color: #FFB6C1;
       text-shadow: 1px 1px 2px #fff;
       margin-bottom: 20px;
+      text-align: center;
     }
 
     .main-container {
       display: flex;
+      flex-direction: row;
       gap: 30px;
       max-width: 1000px;
       width: 100%;
       justify-content: center;
       align-items: flex-start;
+      transition: flex-direction 0.3s;
     }
 
     /* --- 左側控制區 --- */
@@ -43,9 +47,11 @@
       border-radius: 20px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.03);
       width: 380px;
+      max-width: 100%;
       display: flex;
       flex-direction: column;
       gap: 15px;
+      box-sizing: border-box;
     }
 
     .control-group { display: flex; flex-direction: column; gap: 5px; }
@@ -111,15 +117,15 @@
     /* --- 右側預覽視窗容器 --- */
     .chat-view-window {
       width: 360px; height: 580px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); background-color: #ffffff; display: flex; flex-direction: column; overflow: hidden; transition: all 0.2s;
-      border: 2px solid transparent; /* 預設在網頁上隱藏黑框，避免影響視覺 */
+      border: 2px solid transparent; 
       box-sizing: border-box;
+      flex-shrink: 0;
     }
     .chat-header {
       background-color: #ffffff; padding: 15px; text-align: center; font-weight: bold; font-size: 16px; border-bottom: 1px solid #FFE4E1; color: #5D5A56; z-index: 10; flex-shrink: 0;
     }
     #chat-preview-area { flex: 1; background-color: #FFF0F5; overflow-y: auto; display: flex; flex-direction: column; }
     
-    /* 網頁一般模式下的精細可愛小滾輪 */
     #chat-preview-area::-webkit-scrollbar { width: 6px; }
     #chat-preview-area::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 10px; }
 
@@ -127,7 +133,7 @@
 
     .message-row { display: flex; align-items: flex-start; width: 100%; position: relative; }
 
-    /* 大頭貼細框剖面 */
+    /* 大頭貼三層夾心結構 */
     .avatar-wrapper-outer {
       width: 48px; height: 48px; border-radius: 50%; background-color: #ffffff; border: 2px solid #B6E3E6; display: flex; justify-content: center; align-items: center; flex-shrink: 0; padding: 1px; box-sizing: border-box;
     }
@@ -155,24 +161,48 @@
     .message-row.right .delete-btn { left: -55px; }
     .message-row:hover .delete-btn { opacity: 1; }
 
-    /* 全螢幕純淨展示狀態下的關閉按鈕 */
+    /* 精緻圓形小✕按鈕 (點擊任意處浮現) */
     .close-fullscreen-btn {
-      position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; display: none; z-index: 99999; font-size: 14px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      position: fixed; 
+      top: 25px; 
+      right: 25px;
+      background: rgba(255, 182, 193, 0.9); 
+      color: white; 
+      border: 2px solid white; 
+      width: 36px;
+      height: 36px;
+      border-radius: 50%; 
+      font-weight: bold; 
+      font-family: Arial, sans-serif;
+      cursor: pointer; 
+      display: none; 
+      z-index: 99999; 
+      font-size: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s ease;
     }
-    .close-fullscreen-btn:hover { background: rgba(0,0,0,0.7); }
+    .close-fullscreen-btn:hover { background: #FF99A8; }
 
-    /* =======================================================
-       🌟 --- 核心升級：純淨模式專屬排版規則 (全白、黑框、藏滾輪) --- 
-       ======================================================= */
+    /* 響應式手機排版調整 */
+    @media (max-width: 800px) {
+      body { padding: 10px; }
+      .main-container { flex-direction: column; align-items: center; gap: 20px; }
+      .controls { width: 100%; }
+      .chat-view-window { width: 100%; max-width: 360px; }
+    }
+
+    /* 全螢幕純淨模式樣式 */
     body.pure-fullscreen-mode h1,
     body.pure-fullscreen-mode .controls,
     body.pure-fullscreen-mode .delete-btn {
-      display: none !important; /* 隱藏左側控制台與撤回鈕 */
+      display: none !important; 
     }
     
     body.pure-fullscreen-mode {
-      background-color: #ffffff !important; /* 🌟 修正點 1：背景改為純白色 */
+      background-color: #ffffff !important; 
       padding: 0 !important;
       height: 100vh !important;
       display: flex !important;
@@ -181,17 +211,18 @@
     }
     
     body.pure-fullscreen-mode .chat-view-window {
-      border: 2px solid #000000 !important; /* 🌟 修正點 2：整個聊天介面用俐落黑線框起來 */
-      box-shadow: 0 10px 40px rgba(0,0,0,0.08) !important; /* 保留微陰影增加層次 */
+      border: 2px solid #000000 !important; 
+      box-shadow: 0 10px 40px rgba(0,0,0,0.05) !important;
+      width: 360px !important;
+      height: 580px !important;
+      cursor: pointer;
     }
 
-    /* 🌟 修正點 3：純淨模式下，滾輪完美消失（無論任何瀏覽器內建核心） */
-    body.pure-fullscreen-mode #chat-preview-area::-webkit-scrollbar {
-      display: none !important; /* Chrome, Safari, Edge 滾輪隱藏 */
-    }
-    body.pure-fullscreen-mode #chat-preview-area {
-      -ms-overflow-style: none !important;  /* IE, Old Edge 滾輪隱藏 */
-      scrollbar-width: none !important;     /* Firefox 滾輪隱藏 */
+    body.pure-fullscreen-mode #chat-preview-area::-webkit-scrollbar { display: none !important; }
+    body.pure-fullscreen-mode #chat-preview-area { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+
+    body.pure-fullscreen-mode .close-fullscreen-btn {
+      display: flex !important; 
     }
 
     /* Cropper 彈出視窗 */
@@ -210,11 +241,11 @@
     .btn-confirm { background-color: #FFB6C1; color: white; }
   </style>
 </head>
-<body>
+<body id="bodyNode">
 
-  <h1>🌸 專屬自定義可愛聊天產生器 v6.1 🌸</h1>
+  <h1>💙自定義聊天產生器💜</h1>
 
-  <button class="close-fullscreen-btn" onclick="exitPureMode()">✕ 退出純淨模式 (或按 Esc)</button>
+  <button id="closeBtn" class="close-fullscreen-btn" onclick="exitPureMode(); event.stopPropagation();">✕</button>
 
   <div class="main-container">
     
@@ -224,7 +255,7 @@
         <label>✨ 大頭貼外框色與裁剪設定：</label>
         <div class="avatar-settings">
           <div class="avatar-setting-item">
-            <span>👈 對方頭貼</span>
+            <span>對方頭貼</span>
             <div class="control-avatar-wrapper-outer" id="preview-outer-left" onclick="triggerUpload('left')" title="點擊更換圖片">
               <div class="control-avatar-wrapper-inner">
                 <img id="control-avatar-left" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%23B6E3E6'><circle cx='50' cy='50' r='45'/></svg>">
@@ -236,7 +267,7 @@
           </div>
           
           <div class="avatar-setting-item">
-            <span>自己頭貼 👉</span>
+            <span>自己頭貼</span>
             <div class="control-avatar-wrapper-outer" id="preview-outer-right" onclick="triggerUpload('right')" title="點擊更換圖片">
               <div class="control-avatar-wrapper-inner">
                 <img id="control-avatar-right" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%23FFD1DC'><circle cx='50' cy='50' r='45'/></svg>">
@@ -281,7 +312,7 @@
 
       <div class="control-group">
         <label for="nameInput">更改對方名字：</label>
-        <input type="text" id="nameInput" value="可愛小熊" oninput="updateName()">
+        <input type="text" id="nameInput" value="聊天對象" oninput="updateName()">
       </div>
       <div class="control-group">
         <label for="msgInput">輸入對話內容：</label>
@@ -290,12 +321,12 @@
       <div class="btn-grid">
         <button class="btn-left" onclick="addMessage('left')">👈 對方說</button>
         <button class="btn-right" onclick="addMessage('right')">自己說 👉</button>
-        <button class="btn-download" onclick="enterPureMode()">🖥️ 切換至全螢幕純淨截圖模式</button>
+        <button class="btn-download" onclick="enterPureMode()">切換至截圖模式</button>
       </div>
     </div>
 
     <div class="chat-view-window" id="entireChatWindow">
-      <div class="chat-header" id="chatName">可愛小熊</div>
+      <div class="chat-header" id="chatName">聊天對象</div>
       <div id="chat-preview-area">
         <div class="chat-content-scroller" id="chatBox">
           </div>
@@ -308,7 +339,7 @@
 
   <div id="cropperModal" class="modal">
     <div class="modal-content">
-      <h3 style="margin-top:0; color:#5D5A56; font-size:16px;">📐 移動與縮放範圍</h3>
+      <h3 style="margin-top:0; color:#5D5A56; font-size:16px;">移動與縮放範圍</h3>
       <div class="img-container">
         <img id="image-to-crop" src="">
       </div>
@@ -323,6 +354,7 @@
     let cropper = null; let targetAvatarSide = 'left'; 
     let leftAvatarData = document.getElementById('control-avatar-left').src;
     let rightAvatarData = document.getElementById('control-avatar-right').src;
+    let isXButtonVisible = false;
 
     function updateName() {
       const nameInput = document.getElementById('nameInput').value;
@@ -363,6 +395,7 @@
       return `rgba(${r}, ${g}, ${b}, ${Math.max(0.4, percent / 100)})`;
     }
 
+    // 同步色彩
     function syncAllStyles() {
       const leftColor = document.getElementById('color-left').value;
       const rightColor = document.getElementById('color-right').value;
@@ -437,7 +470,6 @@
       reader.readAsDataURL(file);
     }
 
-    // 關閉裁切視窗
     function closeModal() {
       document.getElementById('cropperModal').style.display = 'none'; document.getElementById('avatar-input').value = '';
       if (cropper) { cropper.destroy(); cropper = null; }
@@ -455,6 +487,7 @@
       refreshAvatars(); closeModal();
     }
 
+    // 刷新聊天室內所有對話的大頭貼圖片
     function refreshAvatars() {
       document.querySelectorAll('.message-row.left .avatar-wrapper-inner img').forEach(img => img.src = leftAvatarData);
       document.querySelectorAll('.message-row.right .avatar-wrapper-inner img').forEach(img => img.src = rightAvatarData);
@@ -463,13 +496,33 @@
 
     function enterPureMode() {
       document.body.classList.add('pure-fullscreen-mode');
+      window.scrollTo(0, 0); 
+      const closeBtn = document.getElementById('closeBtn');
+      closeBtn.style.opacity = '0';
+      isXButtonVisible = false;
     }
 
     function exitPureMode() {
       document.body.classList.remove('pure-fullscreen-mode');
+      const closeBtn = document.getElementById('closeBtn');
+      closeBtn.style.opacity = '0';
+      isXButtonVisible = false;
     }
 
-    // 按 Esc 鍵也可以無痛退出
+    // 點擊任意處浮現小✕鈕
+    document.getElementById('bodyNode').addEventListener('click', function() {
+      if (document.body.classList.contains('pure-fullscreen-mode')) {
+        const closeBtn = document.getElementById('closeBtn');
+        if (!isXButtonVisible) {
+          closeBtn.style.opacity = '1'; 
+          isXButtonVisible = true;
+        } else {
+          closeBtn.style.opacity = '0'; 
+          isXButtonVisible = false;
+        }
+      }
+    });
+
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
         exitPureMode();
